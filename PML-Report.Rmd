@@ -1,0 +1,55 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Riley Visscher"
+date: "`r Sys.Date()`"
+output: html_document
+---
+## Introduction
+This report will document the process of generating a prediction model to access how accurately participants perform a number of barbell lifts through the data collected from their accelerometers. The six participants wore these accelerators on their arms, forearms, and belts.
+
+## Methods
+Our first step in creating a prediction model is to load the necessary libraries.
+```{r Loading Libraries, warning = FALSE, message=FALSE}
+library(caret)
+library(randomForest)
+library(dplyr)
+library(readr)
+```
+
+Next is to load our raw data.
+```{r Loading Data}
+train_raw <- read.csv("~/Coursera Courses/Course 8 - Practical Machine Learning/pml-training.csv")
+test_raw <- read.csv("~/Coursera Courses/Course 8 - Practical Machine Learning/pml-testing.csv")
+```
+
+Our next step is to set our predictor variable, classe, to a factor-level variable. This is done so we get accurate out-of-sample predictions.
+```{r Classe Factor Var}
+train_raw$classe <- as.factor(train_raw$classe)
+```
+
+After that, we need to transform/clean up the raw data.
+```{r Clean the Data}
+train_clean <- train_raw[, colSums(is.na(train_raw)) == 0]
+test_clean <- test_raw[, colSums(is.na(test_raw)) == 0]
+```
+
+Once we’ve done all that, we can choose and train our prediction model. A Random Forest method was chosen for this data. A Random Forest model was chosen for this analysis because of its high accuracy, the high number of predictors in the dataset, and the multi-class classification of our predictor variable. A seed was set to ensure reproducibility. The number of trees was reduced to 400 for the overall speed of the model. There will be a slight decrease in accuracy, but the model runs much faster than with the 500 trees default.
+```{r Train the Model, eval = FALSE}
+set.seed(123)
+model_rf <- train(classe ~ ., data = train_clean, method = "rf",
+                  trControl = trainControl(method = "cv", number = 3),
+                  importance = TRUE, ntree = 400
+)
+```
+
+After the model is trained, we run the following code to get our expected Out-of-Sample error.
+``` {r Out-of-Sample Error, eval = FALSE}
+model_rf$results
+```
+
+The expected Out-of-Sample error is 0.031%.
+
+Cross validation was achieved through constant model training and adjustments made with the training data alone. The test data was only used once the model ran without need for adjustments. The test data was used for the predictions and the predictions alone.
+```{r Predictions, eval=FALSE}
+predictions <- predict(model_rf, newdata = test_clean)
+```
